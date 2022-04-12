@@ -17,7 +17,7 @@ jobs:
     - run: python ./autoclick.py  #此处为python代码的文件名
    #发送邮件，可选
     - name: 'Send mail' 
-      uses: a19503310127@163.com
+      uses: dawidd6/action-send-mail@master
       with:
           # 这些是发送邮件需要配置的参数，更多详细的说明请访问具体的仓库
         server_address: smtp.163.com
