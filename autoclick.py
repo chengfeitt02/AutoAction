@@ -1,80 +1,121 @@
-import os
-# 方便延时加载
+# coding=utf-8
+import requests as r
+from lxml import etree
 import time
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+from time import sleep
 
-# 模拟浏览器打开网站
-chrome_options = Options()
-chrome_options.add_argument('--headless')
-chrome_options.add_argument('--no-sandbox')
-chrome_options.add_argument('--disable-dev-shm-usage')
-browser = webdriver.Chrome('/usr/bin/chromedriver', chrome_options=chrome_options)
-#window电脑本地
-# browser = webdriver.Chrome("C:\Program Files (x86)\Google\Chrome\Application\chromedriver")
+a, b, c, d, e, f, z = '', '', '', '', '', '', ''
+timetamp = time.mktime(time.localtime())
+timetamp = int(timetamp)
+y=''
+url = "http://xscfw.hebust.edu.cn/survey/ajaxLogin"
+url2 = "http://xscfw.hebust.edu.cn/survey/index"
+url3 = f"http://xscfw.hebust.edu.cn/survey/surveySave?timestamp={timetamp}"
 
 
+# 账号信息
+param = {
+    "stuNum": "",#此处输入学号
+    "pwd": "",#此处输入密码
+    "vcode": "",
+}
+#
+header = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36 Edg/90.0.818.62"
+}
 
-def scut():
-    browser.get('https://sso.scut.edu.cn/cas/login?service=https%3A%2F%2Fiamok.scut.edu.cn%2Fcas%2Flogin')
-    # 将窗口最大化
-    browser.maximize_window()
-    # 格式是PEP8自动转的
-    # 这里是找到输入框,发送要输入的用户名和密码,模拟登陆
-    browser.find_element_by_xpath(
-        "//*[@id='un']").send_keys(os.environ['SCUT_USER'])
-    browser.find_element_by_xpath(
-        "//*[@id='pd']").send_keys(os.environ['SCUT_PASSWORD'])
-    # 在输入用户名和密码之后,点击登陆按钮
-    browser.find_element_by_xpath("//*[@id='index_login_btn']").click()
-    time.sleep(50)
+
+try:
+    response = r.post(url=url, params=param, headers=header)
+    sleep(20)
+    cookiesJAR = response.cookies  # 获取cookies
+    cookies = cookiesJAR.get_dict()  # 把cookies写成字典形式
+    res = r.get(url=url2, headers=header, cookies=cookies, params=param)
+    b = "正在登录，即学校网页可以正常进入"
+
+except:
+    b = "登录失败，即学校网页无法进入"
+
+
+
+# 获取完成情况
+try:
+    res.encoding = 'uft-8'
+    html = etree.HTML(res.text)
+    content = html.xpath('/html/body/ul/li[1]/div/span/text()')
+    y=content[0]
+    c = "获取填报表单成功，即登录成功"
+
+except:
+    c = "获取填报表单失败，即登录失败"
+
+
+
+# 获取当前日期要填的文档的sid
+try:
+    url4 = 'http://xscfw.hebust.edu.cn/survey/index.action'
+    rek = r.get(url=url4, cookies=cookies, headers=header)
+    rek.encoding = 'utf-8'
+    html3 = etree.HTML(rek.text)
+    sid = html3.xpath('/html/body/ul/li[1]/@sid')[0]
+    d = "获取当前日期要填的文档的sid成功"
+
+except:
+    d = "获取当前日期要填的文档的sid失败"
+
+
+#####获取stuId和qid
+try:
+    url5 = f'http://xscfw.hebust.edu.cn/survey/surveyEdit?id={sid}'
+    rej = r.get(url=url5, cookies=cookies, headers=header)
+    sleep(5)
+    rej.encoding = 'utf-8'
+    html2 = etree.HTML(rej.text)
+    stuId = html2.xpath('//*[@id="surveyForm"]/input[2]/@value')[0]
+    qid = html2.xpath('//*[@id="surveyForm"]/input[3]/@value')[0]
+    e = "获取stuId qid 成功"
+
+except:
+    e = "获取stuId qid 失败"
+
+
+try:
+    data = {
+        "id": sid,
+        "stuId": stuId,
+        "qid": qid,
+        "location": '',
+        "c0": "不超过37.3℃，正常",
+        "c1": '36.5',
+        "c3": "不超过37.3℃，正常",
+        "c4": '36.5',
+        "c6": "健康",
+    }
+    f = "获取信息成功"
+
+
+except:
+    f = "获取信息有误"
+
+
+if y == '已完成':
+    z = '早已完成填报，无需填报'
+
+
+elif y == '未完成':
     try:
-        browser.find_element_by_xpath("//*[@id='app']/div/div/div[2]/div[3]/button").click()
-        print("华工申报成功")
-        time.sleep(3)
-        saveFile("华工健康申报签到成功！")
-    except NoSuchElementException as e:
-        print ("NoSuchElementException!")
-        # js = 'document.getElementById("btn").click();'
-        # browser.execute_script(js)
-        saveFile("华工签到代码存在异常"+str(e))
+        timetamp = time.mktime(time.localtime())
+        timetamp = int(timetamp)
+        rep = r.post(url=url3, params=data, headers=header, cookies=cookies)
+        a = "填报成功"
+    except:
+        a = "填报出错"
 
 
-def saveFile(message):
-    # 保存email内容
-    with open("email.txt", 'a+', encoding="utf-8") as email:
-        email.write(message+'\n')
 
+else:
+    z = "填写时间未到，或填写失败"
 
-def situyun():
-    browser.get('http://situcloud.xyz/auth/login')
-    # 将窗口最大化
-    browser.maximize_window()
-    # 格式是PEP8自动转的
-    # 这里是找到输入框,发送要输入的用户名和密码,模拟登陆
-    browser.find_element_by_xpath(
-        "//*[@id='email']").send_keys(os.environ['SITUYUN_USER'])
-    browser.find_element_by_xpath(
-        "//*[@id='password']").send_keys(os.environ['SITUYUN_PASSWORD'])
-    # 在输入用户名和密码之后,点击登陆按钮
-    browser.find_element_by_xpath("//*[@id='app']/section/div/div/div/div[2]/form/div/div[5]/button").click()
-    time.sleep(10)
-    try:
-        if("明日再来" in browser.find_element_by_xpath("//*[@id='checkin-div']").text):
-            saveFile("明日再来!")
-        else:
-            # browser.find_element_by_xpath("//*[@id='checkin-div']/a").send_keys(Keys.ENTER)
-            js = 'document.getElementById("checkin-div").children[0].click();'
-            browser.execute_script(js)
-            print("司徒云打卡成功")
-        time.sleep(3)
-        saveFile("司徒云签到成功！")
-    except NoSuchElementException as e:
-        print ("NoSuchElementException!")
-        saveFile("司徒云签到代码存在异常"+str(e))
-
-if __name__ == '__main__':
-    scut()
-   
-    # 脚本运行成功,退出浏览器
-    browser.quit()
+file = open("mydata.html", 'w+', encoding='UTF-8')
+file.write(b + '*****' + c + '*****' + d + '*****' + e + '*****' + f + '*****' + z + '*****' + a)
+file.close()
