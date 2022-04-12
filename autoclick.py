@@ -75,6 +75,6 @@ def situyun():
 
 if __name__ == '__main__':
     scut()
-    situyun()
+   
     # 脚本运行成功,退出浏览器
     browser.quit()
